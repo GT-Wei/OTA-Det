@@ -1,0 +1,107 @@
+task: detection
+
+model: DEIM
+criterion: DEIMCriterion
+postprocessor: PostProcessor
+
+use_focal_loss: True
+eval_spatial_size: [640, 640] # h w
+checkpoint_freq: 5    # save freq
+
+DEIM:
+  backbone: HGNetv2
+  encoder: HybridEncoder
+  decoder: DEIMTransformer
+
+HGNetv2:
+  name: 'B4'
+  return_idx: [1, 2, 3]
+  freeze_at: -1         # 0 default
+  freeze_stem_only: True
+  freeze_norm: False    # True default
+  pretrained: True
+  local_model_dir: ./weight/hgnetv2/
+
+HybridEncoder:
+  in_channels: [512, 1024, 2048]
+  feat_strides: [8, 16, 32]
+
+  # intra
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  num_encoder_layers: 1
+  nhead: 8
+  dim_feedforward: 1024
+  dropout: 0.
+  enc_act: 'gelu'
+
+  # cross
+  expansion: 1.0
+  depth_mult: 1
+  act: 'silu'
+
+  # New
+  version: deim
+  csp_type: csp2
+  fuse_op: sum
+
+DEIMTransformer:
+  feat_channels: [256, 256, 256]
+  feat_strides: [8, 16, 32]
+  hidden_dim: 256
+  num_levels: 3
+
+  num_layers: 6
+  eval_idx: -1
+  num_queries: 300
+
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+
+  reg_max: 32
+  reg_scale: 4
+  layer_scale: 1  # 2
+
+  num_points: [3, 6, 3] # [4, 4, 4] [3, 6, 3]
+  cross_attn_method: default # default, discrete
+  query_select_method: default # default, agnostic
+
+  # Act
+  activation: silu
+  mlp_act: silu
+
+  # FFN
+  dim_feedforward: 2048
+
+PostProcessor:
+  num_top_queries: 300
+
+
+## DEIM LR-Scheduler
+epoches: 58 # 72 + 2n  # Increase to search for the optimal ema
+
+lrsheduler: flatcosine
+lr_gamma: 0.5
+warmup_iter: 2000
+flat_epoch: 29    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 8
+ 
+
+## DEIM Loss
+DEIMCriterion:
+  weight_dict: {loss_mal: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5}
+  losses: ['mal', 'boxes', 'local']
+  gamma: 1.5
+  alpha: 0.75
+  reg_max: 32
+
+  matcher:
+    type: HungarianMatcher
+    weight_dict: {cost_class: 2, cost_bbox: 5, cost_giou: 2}
+    alpha: 0.25
+    gamma: 2.0
+    # change matcher
+    change_matcher: True
+    iou_order_alpha: 4.0
+    matcher_change_epoch: 45

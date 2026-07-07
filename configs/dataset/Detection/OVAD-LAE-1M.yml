@@ -1,0 +1,430 @@
+task: detection
+
+evaluator:
+  type: CocoEvaluator
+  iou_types: ['bbox', ]
+
+num_classes: -1  # 消除num_classes参数依赖，DN采用embeddings_dn_sim
+remap_mscoco_category: False
+
+
+# LAE-1M的数据集类别都是从1开始的，测试的时候需要映射一下 note:我直接修改了json文件映射，从0开始 
+train_dataloader: 
+  type: DataLoader
+  dataset:
+    type: ConcatDataset
+    datasets_list: 
+      DOTAv2:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DOTAv2/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DOTAv2/processed_LAE-1M_DOTAv2_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      DIOR:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DIOR/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DIOR/processed_LAE-1M_DIOR_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      FAIR1M:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/FAIR1M/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/FAIR1M/processed_LAE-1M_FAIR1M_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      NWPU-VHR-10:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/NWPU-VHR-10/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/NWPU-VHR-10/processed_LAE-1M_NWPU-VHR-10_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      HRSC2016:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/HRSC2016/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/HRSC2016/processed_LAE-1M_HRSC2016_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      RSOD:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/RSOD/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/RSOD/processed_LAE-1M_RSOD_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      Power-Plant:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/Power-Plant/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/Power-Plant/processed_LAE-1M_Power-Plant_train_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      xview:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/xview/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/xview/processed_LAE-1M_Xview_train_1024_05_modified_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      EMS:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/EMS/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/EMS/EMS_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      NWPU-RESISC45:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/NWPU-RESISC45/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/NWPU-RESISC45/NWPURESISC45_remap.json
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      SLM:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/SLM/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/SLM/SLM_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+      AID:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/AID/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-COD/AID/AID_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Mosaic, output_size: 320, rotation_range: 10, translation_range: [0.1, 0.1], scaling_range: [0.5, 1.5],
+                probability: 1.0, fill_value: 0, use_cache: True, max_cached_images: 50, random_pop: True}
+            - {type: RandomPhotometricDistort, p: 0.5}
+            - {type: RandomZoomOut, fill: 0} 
+            - {type: RandomIoUCrop, p: 0.8} 
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: RandomHorizontalFlip} 
+            - {type: Resize, size: [800, 800], }
+            - {type: SanitizeBoundingBoxes, min_size: 1}
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+            - {type: RandomLoadCaptions_Det, num_neg_samples: [60,60], max_num_samples: 60, padding_to_max: True,}
+          policy:
+            name: stop_epoch
+            epoch: [4, 49, 90]   # list
+            ops: ['Mosaic', 'RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+          mosaic_prob: 0.5
+
+      
+  collate_fn:
+    type: BatchImageCollateFunction
+    base_size: 800
+    base_size_repeat: 6
+    stop_epoch: 90
+    ema_restart_decay: 0.9999
+    # mixup_prob: 0.0
+    # mixup_epochs: [0, 0]
+    # copyblend_prob: 0.0
+    # copyblend_epochs: [0, 0]
+    mixup_prob: 0.5
+    mixup_epochs: [4, 49]
+    copyblend_prob: 0.5
+    copyblend_epochs: [4, 90]
+    area_threshold: 100
+    num_objects: 3
+    with_expand: True
+    expand_ratios: [0.1, 0.25]
+    caption_merge_cfg:
+      max_num_captions: 60
+      num_neg_samples: [60, 60]
+      padding_to_max: True
+      padding_value: ''
+      debug_caption_vis: False
+      debug_caption_vis_max: 2
+      debug_caption_vis_save: ./vis_caption_debug/
+
+  shuffle: True
+  total_batch_size: 32 # total batch size equals to 32 (4 * 8)
+  num_workers: 8
+  drop_last: True 
+  pin_memory: True
+  persistent_workers: True
+  prefetch_factor: 4
+
+
+val_dataloader:
+  type: DataLoader
+  dataset: 
+    type: ConcatDataset
+    datasets_list: 
+      LAE-80C:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-80C/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-80C/LAE-80C-benchmark-remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Resize, size: [800, 800], }
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: LoadText,}
+      DOTAv2:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DOTAv2/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DOTAv2/DOTAv2_val_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Resize, size: [800, 800], }
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: LoadText,}
+      DIOR:
+        type: HF_DetDataset
+        img_root: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DIOR/images
+        ann_file: ../datasets/OTA-Det/Detection/LAE-Dataset/LAE-FOD/DIOR/DIOR_val_remap.json
+        
+        attributes_align_use: False
+        transforms:
+          type: Compose
+          ops:
+            - {type: Resize, size: [800, 800], }
+            - {type: ConvertPILImage, dtype: 'float32', scale: True}
+            - {type: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+            - {type: LoadText,}
+  collate_fn:
+    type: BatchImageCollateFunction
+  shuffle: False
+  total_batch_size: 64
+  num_workers: 8
+  drop_last: False
+  pin_memory: True
+  persistent_workers: True
+  prefetch_factor: 4

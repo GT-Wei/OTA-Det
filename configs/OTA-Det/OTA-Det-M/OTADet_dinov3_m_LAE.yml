@@ -1,0 +1,116 @@
+__include__: [
+  '../../dataset/Detection/OVAD-LAE-1M.yml',
+  '../../runtime.yml',
+  '../../base/optimizer.yml',
+  '../../base/deimv2.yml',
+]
+
+output_dir: ./outputs/OTA-Det-M/LAE-1M-Det
+
+eval_spatial_size: [800, 800] # h w
+
+DEIM: 
+  # backbone: DINOv3STAs
+  backbone: Multi_modality_Backbone
+
+Multi_modality_Backbone:
+  image_model_type: DINOv3STAs
+  text_model_type: CLIP_Text_Encoder
+  image_model_cfg: {
+    name: vit_tinyplus,
+    embed_dim: 256,
+    weights_path: ./ckpts/vittplus_distill.pt,
+    interaction_indexes: [3, 7, 11],   # only need the [1/8, 1/16, 1/32]
+    num_heads: 4
+  }
+  tokenizer_model: local-dir:./ckpts/ViT-B-16-SigLIP2-512
+  custom_text: True
+  embed_dim: 768
+  lock_text_tower_flag: True  
+  attribute_embed_method: 'separate'
+  text_model_cfg: {  # ViT-B-16-SigLIP2-512
+      "context_length": 64,
+      "vocab_size": 256000,
+      "hf_tokenizer_name": "timm/ViT-B-16-SigLIP2-512",
+      "tokenizer_kwargs": {
+          "clean": "canonicalize"
+      },
+      "width": 768,
+      "heads": 12,
+      "layers": 12,
+      "no_causal_mask": True,
+      "proj_bias": True,
+      "pool_type": "last",
+      "norm_kwargs":{
+          "eps": 0.000001
+      },
+      "act_kwargs": {
+          "approximate": "tanh"
+      },
+      output_tokens: True,
+      weights_path: ./ckpts/ViT-B-16-SigLIP2-512/open_clip_model.safetensors
+  }
+
+HybridEncoder:
+  in_channels: [256, 256, 256]
+  depth_mult: 1
+  expansion: 0.67
+  hidden_dim: 256
+  dim_feedforward: 512
+
+
+DEIMTransformer:
+  feat_channels: [256, 256, 256]
+  hidden_dim: 256
+  dim_feedforward: 512
+  num_layers: 4  # 4 5 6
+  eval_idx: -1  # -2 -3 -4
+  use_otadet_contrastive_head: True
+  separate_attr_head: False
+  OTADet_Head_cfg: {
+    image_channels: 256,
+    hidden_embed_dim: 768,
+  }
+  embeddings_dn_sim: True
+  txt_dim: 768
+
+PostProcessor:
+  num_top_queries: 300
+
+optimizer:
+  type: AdamW
+
+  params: 
+    -
+      # except norm/bn/bias in self.dinov3
+      params: '^(?=.*.dinov3)(?!.*(?:norm|bn|bias)).*$'  
+      lr: 0.000025
+    -
+      # including norm/bn/bias in self.dinov3
+      params: '^(?=.*.dinov3)(?=.*(?:norm|bn|bias)).*$'    
+      lr: 0.000025
+      weight_decay: 0.
+    - 
+      # including norm/bn/bias except for the self.dinov3
+      params: '^(?=.*(?:sta|encoder|decoder))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.0005
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+epoches: 102 # 120 + 4n
+
+## Our LR-Scheduler
+flat_epoch: 49    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 12
+
+
+DEIMCriterion:
+  weight_dict: {loss_mal: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5}
+  losses: ['mal', 'boxes', 'local']
+  matcher:
+    # new matcher
+    change_matcher: True
+    iou_order_alpha: 4.0
+    matcher_change_epoch: 80

@@ -1,0 +1,192 @@
+__include__: [
+  '../../dataset/Multi_datasets_Train/OTA-Mix-FourData-LADO.yml',
+  '../../runtime.yml',
+  '../../base/optimizer.yml',
+  '../../base/deimv2.yml',
+]
+
+output_dir: ./outputs/OTA-Det-L/OTA-Mix-FourData-LADO
+eval_spatial_size: [800, 800] # h w
+
+DEIM: 
+  backbone: Multi_modality_Backbone
+
+Multi_modality_Backbone:
+  image_model_type: DINOv3STAs
+  text_model_type: CLIP_Text_Encoder
+  image_model_cfg: {
+    name: dinov3_vits16,
+    weights_path: ./ckpts/dinov3_vits16_pretrain_lvd1689m-08c60483.pth,
+    interaction_indexes: [5, 8, 11],   # only need the [1/8, 1/16, 1/32]
+    finetune: True,
+    conv_inplane: 32,
+    hidden_dim: 224
+  }
+  tokenizer_model: local-dir:./ckpts/ViT-B-16-SigLIP2-512
+  custom_text: True
+  embed_dim: 768
+  lock_text_tower_flag: True  
+  attribute_embed_method: 'separate'
+  text_model_cfg: {  # ViT-B-16-SigLIP2-512
+      "context_length": 64,
+      "vocab_size": 256000,
+      "hf_tokenizer_name": "timm/ViT-B-16-SigLIP2-512",
+      "tokenizer_kwargs": {
+          "clean": "canonicalize"
+      },
+      "width": 768,
+      "heads": 12,
+      "layers": 12,
+      "no_causal_mask": True,
+      "proj_bias": True,
+      "pool_type": "last",
+      "norm_kwargs":{
+          "eps": 0.000001
+      },
+      "act_kwargs": {
+          "approximate": "tanh"
+      },
+      output_tokens: True,
+      weights_path: ./ckpts/ViT-B-16-SigLIP2-512/open_clip_model.safetensors
+  }
+
+HybridEncoder:
+  in_channels: [224, 224, 224]
+  depth_mult: 1
+  expansion: 1.0
+  hidden_dim: 224
+  dim_feedforward: 896
+
+
+DEIMTransformer:
+  feat_channels: [224, 224, 224]
+  hidden_dim: 224
+  dim_feedforward: 1792
+  num_layers: 4
+  eval_idx: -1
+  use_otadet_contrastive_head: True
+  separate_attr_head: True
+  OTADet_Head_cfg: {
+    image_channels: 224,
+    hidden_embed_dim: 768,
+  }
+  embeddings_dn_sim: True
+  txt_dim: 768
+
+PostProcessor:
+  num_top_queries: 300
+
+optimizer:
+  type: AdamW
+
+  params:
+    -
+      # except norm/bn/bias in self.dinov3
+      params: '^(?=.*.dinov3)(?!.*(?:norm|bn|bias)).*$'
+      lr: 0.000025
+    -
+      # including norm/bn/bias in self.dinov3
+      params: '^(?=.*.dinov3)(?=.*(?:norm|bn|bias)).*$'
+      lr: 0.000025
+      weight_decay: 0.
+    -
+      # including norm/bn/bias except for the self.dinov3
+      params: '^(?=.*(?:sta|encoder|decoder))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.001
+  betas: [0.9, 0.999]
+  weight_decay: 0.000125
+
+epoches: 68 # 72 + 2n
+
+lrsheduler: flatcosine
+lr_gamma: 0.5
+warmup_iter: 2000
+flat_epoch: 34
+no_aug_epoch: 8
+
+
+train_dataloader: 
+  dataset:
+    datasets_list:
+      DOTAv2:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      DIOR:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      FAIR1M:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      NWPU-VHR-10:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      HRSC2016:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      RSOD:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      Power-Plant:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      xview:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      EMS:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      NWPU-RESISC45:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      SLM:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      AID:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      AerialVG-Train:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      DIOR-RSVG-Train:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+      OPT-RSVG-Train:
+        transforms:
+          policy:
+            epoch: [4, 34, 60]
+  collate_fn:
+    base_size_repeat: 3
+    stop_epoch: 60
+    # mixup_epochs: [4, 34]
+    # copyblend_epochs: [4, 60]
+  total_batch_size: 64 # total batch size equals to 64 (8 * 8) A800
+  num_workers: 8
+
+val_dataloader:
+  total_batch_size: 128
+  num_workers: 8
+
+DEIMCriterion:
+  weight_dict: {loss_mal: 1, loss_attr_mal: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5}
+  losses: ['mal', 'attr_mal', 'boxes', 'local']
+
+  matcher:
+    change_matcher: True
+    iou_order_alpha: 4.0
+    matcher_change_epoch: 50

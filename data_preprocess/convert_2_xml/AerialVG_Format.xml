@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotation>
+	<filename>AerialVG_3_9999998_00264_d_0000218.jpg</filename>
+	<source>
+		<database>AerialVG</database>
+	</source>
+	<size>
+		<width>2000</width>
+		<height>1500</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<grounding>
+		<caption>A white sedan is parked on the side of the road,there is a white SUV parked at the top right.</caption>
+		<target_object>
+			<phrase>A white sedan</phrase>
+			<bndbox>
+				<xmin>538.4805456883073</xmin>
+				<ymin>789.96449090769</ymin>
+				<xmax>631.651444796063</xmax>
+				<ymax>901.1518622186028</ymax>
+			</bndbox>
+		</target_object>
+		<realation_object>
+			<phrase>a white suv</phrase>
+			<realation>at the top right</realation>
+			<bndbox>
+				<xmin>578.116784535253</xmin>
+				<ymin>695.7640791026112</ymin>
+				<xmax>663.0515820644225</xmax>
+				<ymax>789.4497345590285</ymax>
+			</bndbox>
+		</realation_object>
+	</grounding>
+	<grounding>
+		<caption>A blue truck is parked on the side of the road,there is a white van parked above of it.</caption>
+		<target_object>
+			<phrase>a blue truck</phrase>
+			<bndbox>
+				<xmin>805.0593418582332</xmin>
+				<ymin>566.7040419107091</ymin>
+				<xmax>869.1513714391699</xmax>
+				<ymax>640.0401142196656</ymax>
+			</bndbox>
+		</target_object>
+		<realation_object>
+			<phrase>a white van</phrase>
+			<realation>above</realation>
+			<bndbox>
+				<xmin>808.3272601156744</xmin>
+				<ymin>501.4067174469359</ymin>
+				<xmax>852.3955309606661</xmax>
+				<ymax>564.3613900826382</ymax>
+			</bndbox>
+		</realation_object>
+	</grounding>
+</annotation>
